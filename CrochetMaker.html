@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Crochet Doll Designer - v16</title>
+   <style>
+    :root {
+      --bg: #12131a;
+      --panel: #181924;
+      --accent: #ff9fb6;
+      --accent-soft: #ffcada;
+      --ink: #f8f5ff;
+      --muted: #b2b9d6;
+      --border-soft: #34384d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, sans-serif;
+      background: radial-gradient(circle at top, #2a2f4a, #0b0d13);
+      color: var(--ink);
+    }
+
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(160deg, #181924, #13141d);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-left {
+      border-right: 1px solid var(--border-soft);
+    }
+
+    .sidebar-right {
+      border-left: 1px solid var(--border-soft);
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 4px;
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .control-group {
+      background: rgba(9, 10, 18, 0.8);
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .control-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: #202233;
+      color: var(--ink);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+
+    button:hover {
+      background: #2a2d44;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff9fb6, #ffc8dd);
+      color: #32121c;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #ff89a8, #ffb8d6);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+    }
+
+    .btn-danger {
+      background: #3a1b24;
+      color: #ffd7e0;
+    }
+
+    .btn-danger:hover {
+      background: #4b222f;
+    }
+
+    .btn-toggle-active {
+      background: linear-gradient(135deg, #4ade80, #bbf7d0);
+      color: #052e16;
+      font-weight: 600;
+    }
+
+    .color-chip {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      flex-shrink: 0;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .canvas-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .canvas {
+      position: relative;
+      width: 720px;
+      height: 540px;
+      background: radial-gradient(circle at top, #fcf6ff, #e2d7ff);
+      border-radius: 24px;
+      box-shadow:
+        0 22px 40px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+
+    .canvas::before {
+      content: "Click buttons on the left to add shapes, then drag, resize, mirror, layer & save.";
+      position: absolute;
+      inset: 14px;
+      border-radius: 18px;
+      border: 1px dashed rgba(107, 114, 128, 0.6);
+      font-size: 11px;
+      color: #6b7280;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 6px;
+      pointer-events: none;
+    }
+
+    .canvas.exporting {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .canvas.exporting::before {
+      content: "" !important;
+      border: none !important;
+    }
+
+    .shape {
+      position: absolute;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.35),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+      transition: box-shadow 0.1s, transform 0.06s;
+    }
+
+    .shape:active { cursor: grabbing; }
+
+    .shape.selected {
+      box-shadow:
+        0 0 0 2px rgba(255, 159, 182, 0.9),
+        0 6px 14px rgba(0, 0, 0, 0.55),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Make selection outline extra strong for triangle & skirt */
+    .shape-triangle.selected,
+    .shape-skirt.selected {
+      box-shadow:
+        0 0 0 3px rgba(255, 159, 182, 1),
+        0 0 0 5px rgba(255, 255, 255, 0.95),
+        0 10px 18px rgba(0, 0, 0, 0.8),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.95);
+    }
+
+    .shape-circle {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+    }
+
+    .shape-oval-h {
+      width: 130px;
+      height: 85px;
+      border-radius: 50%;
+    }
+
+    .shape-oval-v {
+      width: 80px;
+      height: 120px;
+      border-radius: 50%;
+    }
+
+    .shape-square {
+      width: 100px;
+      height: 100px;
+      border-radius: 20px;
+    }
+
+    .shape-triangle {
+      width: 120px;
+      height: 100px;
+      clip-path: polygon(50% 0%, 0 100%, 100% 100%);
+    }
+
+    .shape-skirt {
+      width: 160px;
+      height: 110px;
+      clip-path: polygon(
+        0 0,
+        100% 0,
+        100% 55%,
+        90% 75%,
+        80% 60%,
+        70% 80%,
+        60% 60%,
+        50% 80%,
+        40% 60%,
+        30% 80%,
+        20% 60%,
+        10% 75%,
+        0 55%
+      );
+    }
+
+    .shape-patch {
+      width: 220px;
+      height: 170px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .patch-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .patch-path {
+      stroke: rgba(0, 0, 0, 0.25);
+      stroke-width: 3;
+      stroke-linejoin: round;
+      fill: #f8a3b6;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+    }
+
+    .shape-pillar {
+      width: 80px;
+      height: 200px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .pillar-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .pillar-path {
+      fill: none;
+      stroke-width: 32;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke: #f8a3b6;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+    }
+
+    .resize-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      right: -6px;
+      bottom: -6px;
+      background: radial-gradient(circle at 30% 20%, #ffffff, #fecaca);
+      border: 1px solid rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+      cursor: se-resize;
+      display: none;
+    }
+
+    .shape.selected .resize-handle { display: block; }
+
+    /* Make triangle & skirt handles bigger and easier to see */
+    .shape-triangle .resize-handle,
+    .shape-skirt .resize-handle {
+      width: 18px;
+      height: 18px;
+      right: -9px;
+      bottom: -9px;
+    }
+
+    .yarn {
+      background-image:
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.8) 0, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(0, 0, 0, 0.16) 0, transparent 55%),
+        repeating-radial-gradient(
+          circle at 50% 50%,
+          rgba(255, 255, 255, 0.35) 0,
+          rgba(255, 255, 255, 0.35) 1px,
+          rgba(0, 0, 0, 0.12) 1px,
+          rgba(0, 0, 0, 0.12) 2px
+        );
+      background-blend-mode: overlay, multiply, normal;
+      background-size: 160% 160%;
+      background-position: 40% 40%;
+    }
+
+    .yarn-pink  { background-color: #f8a3b6; }
+    .yarn-cream { background-color: #f7e2c8; }
+    .yarn-mint  { background-color: #bde6d7; }
+    .yarn-sky   { background-color: #bedbff; }
+    .yarn-lilac { background-color: #d6c3ff; }
+    .yarn-brown { background-color: #c5966a; }
+
+    /* Button base styles (round, resizable, tintable) */
+    .shape-button,
+    .shape-button-eye {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.9) 0, rgba(255,255,255,0) 40%),
+        radial-gradient(circle at 50% 60%, var(--btn-base, #111827) 0, var(--btn-base, #111827) 70%);
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.7),
+        inset 0 0 0 2px rgba(17, 24, 39, 0.9);
+    }
+
+    .shape-button::after,
+    .shape-button-eye::after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border-radius: 999px;
+      border: 2px solid rgba(15, 23, 42, 0.9);
+      box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.4);
+    }
+
+    /* 4-hole button variant */
+    .shape-button-four::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 35%, #020617 0, #020617 20%, transparent 22%),
+        radial-gradient(circle at 65% 35%, #020617 0, #020617 20%, transparent 22%),
+        radial-gradient(circle at 35% 65%, #020617 0, #020617 20%, transparent 22%),
+        radial-gradient(circle at 65% 65%, #020617 0, #020617 20%, transparent 22%);
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,0.4);
+    }
+
+    .shape-string {
+      width: 160px;
+      height: 80px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .shape-string.selected {
+      box-shadow: 0 0 0 2px rgba(255, 159, 182, 0.9);
+    }
+
+    .string-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .string-path {
+      fill: none;
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .string-handle,
+    .patch-handle,
+    .pillar-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f9fafb;
+      border: 1px solid #111827;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+      cursor: grab;
+    }
+
+    .string-handle:active,
+    .patch-handle:active,
+    .pillar-handle:active {
+      cursor: grabbing;
+    }
+
+    /* Patch points only when selected */
+    .patch-handle { display: none; }
+    .shape-patch.selected .patch-handle { display: block; }
+
+    /* String points only when selected */
+    .string-handle { display: none; }
+    .shape-string.selected .string-handle { display: block; }
+
+    /* Pillar points only when selected */
+    .pillar-handle { display: none; }
+    .shape-pillar.selected .pillar-handle { display: block; }
+
+    /* Emoji sticker shapes */
+    .shape-emoji {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      background: transparent;
+      box-shadow: none;
+      /* make 👁 and 🕶 and light emojis pop */
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
+    }
+
+    .pill-icon {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #fff, #fdb6c8);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+    }
+
+    .pill-icon-eye {
+      background:
+        radial-gradient(circle at 30% 30%, #f9fafb, #d1d5db 50%, #111827 75%);
+    }
+
+    .pill-icon-body {
+      background:
+        radial-gradient(circle at 30% 20%, #fef3c7, #f97316 80%);
+    }
+
+    .pill-icon-face {
+      background:
+        radial-gradient(circle at 30% 20%, #fbcfe8, #db2777 80%);
+    }
+
+    input[type="color"] {
+      width: 32px;
+      height: 20px;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="range"] {
+      flex: 1;
+    }
+
+    #emojiInput {
+      flex: 1;
+      min-width: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #111320;
+      color: var(--ink);
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    #emojiInput::placeholder {
+      color: var(--muted);
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar sidebar-left">
+    <div>
+      <h1>🧶 Crochet Doll Designer</h1>
+      <div class="tagline">
+        Drag, resize, mirror & bend yarn pieces to plan your amigurumi dolls.
+      </div>
+    </div>
+
+    <!-- 1. Yarn shapes -->
+    <div class="control-group">
+      <div class="section-title">Yarn shapes</div>
+      <div class="control-row">
+        <button onclick="addShape('circle')" class="btn-primary">
+          <span class="pill-icon pill-icon-face"></span> Head (circle)
+        </button>
+        <button onclick="addShape('oval-v')">
+          <span class="pill-icon pill-icon-body"></span> Body (oval)
+        </button>
+        <button onclick="addShape('oval-h')">
+          <span class="pill-icon"></span> Ear / limb
+        </button>
+        <button onclick="addPatch()">
+          ✂ Complex yarn patch
+        </button>
+      </div>
+      <div class="control-row" style="margin-top:8px;">
+        <button onclick="addShape('square')">
+          ◻ Flat square
+        </button>
+        <button onclick="addShape('triangle')">
+          △ Triangle
+        </button>
+      </div>
+      <div class="control-row" style="margin-top:8px;">
+        <button onclick="addShape('skirt')">
+          〰 Skirt / frill
+        </button>
+        <button onclick="addPillar()">
+          🪄 Pillar (hair / tail)
+        </button>
+      </div>
+      <div class="hint">
+        Drag pieces on the canvas. Select a piece to see its resize handle or edit points (for complex shapes).
+      </div>
+    </div>
+
+    <!-- 2. Yarn colors -->
+    <div class="control-group">
+      <div class="section-title">Yarn colors</div>
+      <div class="control-row">
+        <button onclick="setColor('yarn-pink')">
+          <span class="color-chip" style="background:#f8a3b6;"></span> Pink
+        </button>
+        <button onclick="setColor('yarn-cream')">
+          <span class="color-chip" style="background:#f7e2c8;"></span> Cream
+        </button>
+        <button onclick="setColor('yarn-mint')">
+          <span class="color-chip" style="background:#bde6d7;"></span> Mint
+        </button>
+        <button onclick="setColor('yarn-sky')">
+          <span class="color-chip" style="background:#bedbff;"></span> Sky
+        </button>
+        <button onclick="setColor('yarn-lilac')">
+          <span class="color-chip" style="background:#d6c3ff;"></span> Lilac
+        </button>
+        <button onclick="setColor('yarn-brown')">
+          <span class="color-chip" style="background:#c5966a;"></span> Brown
+        </button>
+      </div>
+      <div class="hint">
+        Colors apply to the selected yarn piece, patch, or pillar (not buttons or strings).
+      </div>
+      <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--muted);">Custom yarn:</span>
+        <input type="color" id="yarnColorPicker" value="#f8a3b6"
+               oninput="setCustomYarnColor(this.value)" />
+      </div>
+    </div>
+
+    <!-- 3. Button shapes -->
+    <div class="control-group">
+      <div class="section-title">Buttons</div>
+      <div class="control-row">
+        <button onclick="addShape('button-round')">
+          <span class="pill-icon pill-icon-eye"></span> Round button
+        </button>
+        <button onclick="addShape('button-four')">
+          <span class="pill-icon pill-icon-eye"></span> 4-hole button
+        </button>
+      </div>
+      <div class="hint">
+        Click a button to select it, then resize or duplicate.
+      </div>
+    </div>
+
+    <!-- 4. Button colors -->
+    <div class="control-group">
+      <div class="section-title">Button colors</div>
+      <div class="control-row">
+        <button onclick="setButtonColor('white')">
+          <span class="color-chip" style="background:#f9fafb;"></span> White
+        </button>
+        <button onclick="setButtonColor('black')">
+          <span class="color-chip" style="background:#111827;"></span> Black
+        </button>
+        <button onclick="setButtonColor('brown')">
+          <span class="color-chip" style="background:#6b3f25;"></span> Brown
+        </button>
+        <button onclick="setButtonColor('gold')">
+          <span class="color-chip" style="background:#fbbf24;"></span> Gold
+        </button>
+      </div>
+      <div class="hint">
+        Applies to selected buttons (round or 4-hole).
+      </div>
+      <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:11px;color:var(--muted);">Custom button:</span>
+        <input type="color" id="buttonColorPicker" value="#111827"
+               oninput="setCustomButtonColor(this.value)" />
+      </div>
+    </div>
+
+    <!-- 5. Emoji stickers -->
+    <div class="control-group">
+      <div class="section-title">Emoji stickers</div>
+      <div class="control-row">
+        <button onclick="addEmoji('👄')">👄</button>
+        <button onclick="addEmoji('👅')">👅</button>
+        <button onclick="addEmoji('🪢')">🪢</button>
+        <button onclick="addEmoji('🧶')">🧶</button>
+        <button onclick="addEmoji('🪡')">🪡</button>
+        <button onclick="addEmoji('👁️')">👁️</button>
+        <button onclick="addEmoji('👜')">👜</button>
+  <button onclick="addEmoji('💅')">💅</button>
+        </div>
+      <div class="control-row" style="margin-top:8px;">
+        <button onclick="addEmoji('🐸')">🐸</button>
+<button onclick="addEmoji('👑')">👑</button>
+        <button onclick="addEmoji('🌯')">🌯</button>
+        <button onclick="addEmoji('🍓')">🍓</button>
+        <button onclick="addEmoji('✂️')">✂️</button>
+        <button onclick="addEmoji('🎀')">🎀</button>
+        <button onclick="addEmoji('💵')">💵</button>
+        <button onclick="addEmoji('♥️')">♥️</button>
+ <button onclick="addEmoji('🫦')">🫦</button>
+      </div>
+      <div class="control-row" style="margin-top:8px; align-items:center;">
+        <input id="emojiInput" type="text" placeholder="Type or paste emoji…" />
+        <button onclick="addEmojiFromInput()">Add</button>
+      </div>
+      <div class="hint">
+        Use the presets or type/paste any emoji you want, then drag & resize.
+      </div>
+    </div>
+
+    <!-- 6. String shapes -->
+    <div class="control-group">
+      <div class="section-title">Strings</div>
+      <div class="control-row">
+        <button onclick="addString()">
+          ➰ Curved string (smile / detail)
+        </button>
+      </div>
+      <div class="hint">
+        Select a string to see its points, then drag the dots to bend it.
+      </div>
+    </div>
+
+    <!-- 7. String colors -->
+    <div class="control-group">
+      <div class="section-title">String colors</div>
+      <div class="control-row">
+        <button onclick="setStringColor('#111827')">
+          <span class="color-chip" style="background:#111827;"></span> Dark
+        </button>
+        <button onclick="setStringColor('#b45309')">
+          <span class="color-chip" style="background:#b45309;"></span> Brown
+        </button>
+        <button onclick="setStringColor('#db2777')">
+          <span class="color-chip" style="background:#db2777;"></span> Pink
+        </button>
+        <button onclick="setStringColor('#f97316')">
+          <span class="color-chip" style="background:#f97316;"></span> Orange
+        </button>
+      </div>
+      <div class="hint">
+        Applies to all selected strings.
+      </div>
+      <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:11px;color:var(--muted);">Custom string:</span>
+        <input type="color" id="stringColorPicker" value="#111827"
+               oninput="setStringColor(this.value)" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER CANVAS -->
+  <main class="canvas-wrap">
+    <div class="canvas" id="canvas"></div>
+  </main>
+
+  <!-- RIGHT SIDEBAR: transform + layering + history + draw + save/export -->
+  <aside class="sidebar sidebar-right">
+    <div class="control-group">
+      <div class="section-title">Transform</div>
+      <div class="control-row">
+        <button onclick="rotateSelected(-15)">⟲ Rotate -15°</button>
+        <button onclick="rotateSelected(15)">⟳ Rotate +15°</button>
+        <button onclick="mirrorSelected()">⇋ Mirror</button>
+        <button class="btn-danger" onclick="deleteSelected()">🗑 Delete</button>
+      </div>
+      <div class="control-row" style="margin-top:8px;">
+        <button id="multiSelectBtn" onclick="toggleMultiSelect()">
+          Multi-select: Off
+        </button>
+        <button onclick="duplicateSelected()">⧉ Duplicate selected</button>
+      </div>
+      <div class="hint">
+        When multi-select is ON, click multiple pieces to work on them together.
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="section-title">Layer order</div>
+      <div class="control-row">
+        <button onclick="sendToBackSelected()">⤓ To back</button>
+        <button onclick="bringToFrontSelected()">⤒ To front</button>
+      </div>
+      <div class="control-row" style="margin-top:8px;">
+        <button onclick="moveBackwardSelected()">⬅ Backward</button>
+        <button onclick="moveForwardSelected()">➡ Forward</button>
+      </div>
+      <div class="hint">
+        Adjust which pieces are on top or behind. Works with multi-select.
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="section-title">History</div>
+      <div class="control-row">
+        <button onclick="undoAction()">↺ Undo</button>
+        <button onclick="redoAction()">↻ Redo</button>
+      </div>
+      <div class="hint">
+        Undo / redo recent changes to layout, colors, and drawing.
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="section-title">Drawing</div>
+      <div class="control-row">
+        <button id="drawModeBtn" onclick="toggleDrawMode()">✏️ Draw: Off</button>
+        <button onclick="clearDrawing()">🧽 Clear drawing</button>
+      </div>
+      <div class="control-row" style="margin-top:8px; align-items:center;">
+        <span style="font-size:11px;color:var(--muted);">Brush color:</span>
+        <input type="color" id="drawColorPicker" value="#111827"
+               oninput="setDrawColor(this.value)" />
+        <span style="font-size:11px;color:var(--muted);">Size:</span>
+        <input type="range" id="brushSize" min="1" max="20" value="4"
+               oninput="setBrushSize(this.value)" />
+      </div>
+      <div class="hint">
+        Turn Draw ON to sketch on top of your doll. Turn it OFF to move pieces again.
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="section-title">Save & export</div>
+      <div class="control-row">
+        <button onclick="saveJSON()">💾 Save JSON</button>
+        <button onclick="triggerLoadJSON()">📂 Load JSON</button>
+        <button onclick="exportPNG()">🖼 Export PNG</button>
+      </div>
+      <div class="hint">
+        JSON lets you reload and edit designs. PNG exports a transparent image (with doodles & stickers).
+      </div>
+      <input type="file" id="loadJsonInput" accept=".json" style="display:none" />
+    </div>
+  </aside>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const loadInput = document.getElementById("loadJsonInput");
+    const multiSelectBtn = document.getElementById("multiSelectBtn");
+
+    let selectedShape = null;
+    let selectedShapes = new Set();
+    let multiSelectEnabled = false;
+
+    let dragTarget = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    let zCounter = 1;
+
+    // Drawing layer
+    let drawCanvas = null;
+    let drawCtx = null;
+    let drawMode = false;
+    let isDrawing = false;
+    let lastDrawX = 0;
+    let lastDrawY = 0;
+    let drawColor = "#111827";
+    let brushSize = 4;
+
+    // History stacks
+    let undoStack = [];
+    let redoStack = [];
+
+    const MAX_HISTORY = 50;
+
+    const yarnClasses = [
+      "yarn-pink",
+      "yarn-cream",
+      "yarn-mint",
+      "yarn-sky",
+      "yarn-lilac",
+      "yarn-brown",
+    ];
+
+    const yarnColorHex = {
+      "yarn-pink": "#f8a3b6",
+      "yarn-cream": "#f7e2c8",
+      "yarn-mint": "#bde6d7",
+      "yarn-sky": "#bedbff",
+      "yarn-lilac": "#d6c3ff",
+      "yarn-brown": "#c5966a",
+    };
+
+    const buttonPresetHex = {
+      white: "#f9fafb",
+      black: "#111827",
+      brown: "#6b3f25",
+      gold: "#fbbf24",
+    };
+
+    /* ---------- Drawing layer setup ---------- */
+
+    function setupDrawingLayer() {
+      drawCanvas = document.createElement("canvas");
+      drawCanvas.id = "drawLayer";
+      drawCanvas.width = canvas.clientWidth;
+      drawCanvas.height = canvas.clientHeight;
+      drawCanvas.style.position = "absolute";
+      drawCanvas.style.left = "0";
+      drawCanvas.style.top = "0";
+      drawCanvas.style.zIndex = "999";
+      drawCanvas.style.pointerEvents = "none";
+      canvas.appendChild(drawCanvas);
+
+      drawCtx = drawCanvas.getContext("2d");
+      drawCtx.lineCap = "round";
+      drawCtx.lineJoin = "round";
+
+      drawCanvas.addEventListener("mousedown", (e) => {
+        if (!drawMode) return;
+        e.preventDefault();
+        const rect = drawCanvas.getBoundingClientRect();
+        lastDrawX = e.clientX - rect.left;
+        lastDrawY = e.clientY - rect.top;
+        isDrawing = true;
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDrawing || !drawMode) return;
+        const rect = drawCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        drawCtx.strokeStyle = drawColor;
+        drawCtx.lineWidth = brushSize;
+        drawCtx.beginPath();
+        drawCtx.moveTo(lastDrawX, lastDrawY);
+        drawCtx.lineTo(x, y);
+        drawCtx.stroke();
+        lastDrawX = x;
+        lastDrawY = y;
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (isDrawing) {
+          isDrawing = false;
+          pushHistory();
+        }
+      });
+    }
+
+    function toggleDrawMode() {
+      drawMode = !drawMode;
+      const btn = document.getElementById("drawModeBtn");
+      if (btn) {
+        btn.textContent = drawMode ? "✏️ Draw: On" : "✏️ Draw: Off";
+        if (drawMode) btn.classList.add("btn-toggle-active");
+        else btn.classList.remove("btn-toggle-active");
+      }
+      if (drawCanvas) {
+        drawCanvas.style.pointerEvents = drawMode ? "auto" : "none";
+      }
+      if (drawMode) {
+        clearSelected();
+      }
+    }
+
+    function setDrawColor(color) {
+      drawColor = color || "#111827";
+    }
+
+    function setBrushSize(val) {
+      brushSize = parseFloat(val) || 4;
+    }
+
+    function clearDrawing() {
+      if (!drawCtx || !drawCanvas) return;
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      pushHistory();
+    }
+
+    /* ---------- History helpers ---------- */
+
+    function serializeCanvas() {
+      const shapes = [];
+      const children = Array.from(canvas.querySelectorAll(".shape"));
+
+      children.forEach((el) => {
+        const left = parseFloat(el.style.left || "0");
+        const top = parseFloat(el.style.top || "0");
+        const width = el.offsetWidth;
+        const height = el.offsetHeight;
+        const rotation = parseFloat(el.dataset.rotation || "0");
+        const flipX = parseFloat(el.dataset.flipX || "1");
+        const zIndex = parseInt(el.style.zIndex || "1", 10) || 1;
+
+        let type = "unknown";
+        let yarnColor = null;
+        let yarnCustomColor = null;
+        let stringColor = null;
+        let points = null;
+        let patchPoints = null;
+        let pillarPoints = null;
+        let buttonColor = null;
+        let emojiChar = null;
+        let emojiSize = null;
+
+        if (el.classList.contains("shape-string")) {
+          type = "string";
+          const path = el.querySelector(".string-path");
+          if (path) {
+            stringColor =
+              el.dataset.stringColor || path.style.stroke || "#111827";
+          }
+          const handles = Array.from(
+            el.querySelectorAll(".string-handle")
+          ).sort((a, b) => {
+            return (
+              parseInt(a.dataset.idx || "0", 10) -
+              parseInt(b.dataset.idx || "0", 10)
+            );
+          });
+          points = handles.map((h) => ({
+            x: parseFloat(h.style.left || "0") + 5,
+            y: parseFloat(h.style.top || "0") + 5,
+          }));
+        } else if (el.classList.contains("shape-patch")) {
+          type = "patch";
+          const handles = Array.from(
+            el.querySelectorAll(".patch-handle")
+          ).sort((a, b) => {
+            return (
+              parseInt(a.dataset.idx || "0", 10) -
+              parseInt(b.dataset.idx || "0", 10)
+            );
+          });
+          patchPoints = handles.map((h) => ({
+            x: parseFloat(h.style.left || "0") + 5,
+            y: parseFloat(h.style.top || "0") + 5,
+          }));
+          yarnCustomColor = el.dataset.yarnCustomColor || null;
+          yarnColor = el.dataset.yarnColor || null;
+        } else if (el.classList.contains("shape-pillar")) {
+          type = "pillar";
+          const handles = Array.from(
+            el.querySelectorAll(".pillar-handle")
+          ).sort((a, b) => {
+            return (
+              parseInt(a.dataset.idx || "0", 10) -
+              parseInt(b.dataset.idx || "0", 10)
+            );
+          });
+          pillarPoints = handles.map((h) => ({
+            x: parseFloat(h.style.left || "0") + 5,
+            y: parseFloat(h.style.top || "0") + 5,
+          }));
+          yarnCustomColor = el.dataset.yarnCustomColor || null;
+          yarnColor = el.dataset.yarnColor || null;
+        } else if (el.classList.contains("shape-button") || el.classList.contains("shape-button-eye")) {
+          if (el.classList.contains("shape-button-four")) {
+            type = "button-four";
+          } else {
+            type = "button-round";
+          }
+          buttonColor = el.dataset.buttonColor || null;
+        } else if (el.classList.contains("shape-emoji")) {
+          type = "emoji";
+          emojiChar = el.dataset.emoji || el.textContent || "⭐";
+          const fs = parseFloat(window.getComputedStyle(el).fontSize || "0");
+          emojiSize = fs || null;
+        } else if (el.classList.contains("shape-square")) {
+          type = "square";
+        } else if (el.classList.contains("shape-triangle")) {
+          type = "triangle";
+        } else if (el.classList.contains("shape-skirt")) {
+          type = "skirt";
+        } else if (el.classList.contains("shape-circle")) {
+          type = "circle";
+        } else if (el.classList.contains("shape-oval-v")) {
+          type = "oval-v";
+        } else if (el.classList.contains("shape-oval-h")) {
+          type = "oval-h";
+        }
+
+        if (el.classList.contains("yarn") &&
+            !el.classList.contains("shape-patch")) {
+          yarnClasses.forEach((c) => {
+            if (el.classList.contains(c)) yarnColor = c;
+          });
+          const custom = el.dataset.yarnCustomColor;
+          if (custom) yarnCustomColor = custom;
+        }
+
+        shapes.push({
+          type,
+          left,
+          top,
+          width,
+          height,
+          rotation,
+          flipX,
+          zIndex,
+          yarnColor,
+          yarnCustomColor,
+          stringColor,
+          points,
+          patchPoints,
+          pillarPoints,
+          buttonColor,
+          emojiChar,
+          emojiSize,
+        });
+      });
+
+      let drawingData = null;
+      if (drawCanvas) {
+        try {
+          drawingData = drawCanvas.toDataURL();
+        } catch (e) {
+          drawingData = null;
+        }
+      }
+
+      return { version: 16, shapes, drawingData };
+    }
+
+    function pushHistory() {
+      const data = serializeCanvas();
+      const snapshot = JSON.stringify(data);
+      undoStack.push(snapshot);
+      if (undoStack.length > MAX_HISTORY) {
+        undoStack.shift();
+      }
+      redoStack = [];
+    }
+
+    function undoAction() {
+      if (undoStack.length < 2) return;
+      const current = undoStack.pop();
+      redoStack.push(current);
+      const prevStr = undoStack[undoStack.length - 1];
+      if (!prevStr) return;
+      const prevData = JSON.parse(prevStr);
+      loadFromData(prevData);
+    }
+
+    function redoAction() {
+      if (!redoStack.length) return;
+      const stateStr = redoStack.pop();
+      if (!stateStr) return;
+      const data = JSON.parse(stateStr);
+      loadFromData(data);
+      undoStack.push(stateStr);
+    }
+
+    /* ---------- Emoji helpers ---------- */
+
+    function addEmoji(char, skipHistory) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-emoji");
+      el.textContent = char;
+      el.dataset.emoji = char;
+
+      const size = 60;
+      el.style.width = size + "px";
+      el.style.height = size + "px";
+      el.style.fontSize = "40px";
+
+      const rect = canvas.getBoundingClientRect();
+      const defaultX = rect.width / 2 - size / 2 + (Math.random() * 20 - 10);
+      const defaultY = rect.height / 2 - size / 2 + (Math.random() * 20 - 10);
+      el.style.left = defaultX + "px";
+      el.style.top = defaultY + "px";
+
+      el.dataset.rotation = "0";
+      el.dataset.flipX = "1";
+      el.style.zIndex = ++zCounter;
+      updateTransform(el);
+
+      canvas.appendChild(el);
+      initShapeUI(el);
+      setSelected(el);
+
+      if (!skipHistory) pushHistory();
+      return el;
+    }
+
+    function addEmojiFromInput() {
+      const input = document.getElementById("emojiInput");
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) return;
+      addEmoji(val);
+      input.value = "";
+    }
+
+    /* ---------- Selection helpers ---------- */
+
+    function addToSelection(el) {
+      if (!selectedShapes.has(el)) {
+        selectedShapes.add(el);
+        el.classList.add("selected");
+      }
+      selectedShape = el;
+    }
+
+    function removeFromSelection(el) {
+      if (selectedShapes.has(el)) {
+        selectedShapes.delete(el);
+        el.classList.remove("selected");
+      }
+      if (selectedShape === el) {
+        selectedShape = selectedShapes.size
+          ? Array.from(selectedShapes)[selectedShapes.size - 1]
+          : null;
+      }
+    }
+
+    function clearSelected() {
+      selectedShapes.forEach(s => s.classList.remove("selected"));
+      selectedShapes.clear();
+      selectedShape = null;
+    }
+
+    function setSelected(el) {
+      if (multiSelectEnabled) {
+        if (selectedShapes.has(el)) {
+          removeFromSelection(el);
+        } else {
+          addToSelection(el);
+        }
+      } else {
+        clearSelected();
+        addToSelection(el);
+      }
+    }
+
+    function toggleMultiSelect() {
+      multiSelectEnabled = !multiSelectEnabled;
+      if (multiSelectEnabled) {
+        multiSelectBtn.textContent = "Multi-select: On";
+        multiSelectBtn.classList.add("btn-toggle-active");
+      } else {
+        multiSelectBtn.textContent = "Multi-select: Off";
+        multiSelectBtn.classList.remove("btn-toggle-active");
+        if (selectedShapes.size > 1 && selectedShape) {
+          const last = selectedShape;
+          clearSelected();
+          addToSelection(last);
+        }
+      }
+    }
+
+    /* ---------- Transform / general ---------- */
+
+    function updateTransform(el) {
+      const rot = parseFloat(el.dataset.rotation || "0");
+      const flipX = parseFloat(el.dataset.flipX || "1");
+      if (el.classList.contains("shape-string")) {
+        el.style.transform = `rotate(${rot}deg)`;
+      } else {
+        el.style.transform = `scaleX(${flipX}) rotate(${rot}deg)`;
+      }
+    }
+
+    function mirrorSelected() {
+      if (!selectedShapes.size) return;
+      selectedShapes.forEach(shape => {
+        if (shape.classList.contains("shape-string")) {
+          mirrorString(shape);
+        } else {
+          let flipX = parseFloat(shape.dataset.flipX || "1");
+          flipX = flipX === 1 ? -1 : 1;
+          shape.dataset.flipX = flipX.toString();
+          updateTransform(shape);
+        }
+      });
+      pushHistory();
+    }
+
+    function mirrorString(parent) {
+      const width = parent.offsetWidth;
+      const handles = parent.querySelectorAll(".string-handle");
+      handles.forEach((h) => {
+        const left = parseFloat(h.style.left || "0");
+        const centerX = left + 5;
+        const mirroredCenter = width - centerX;
+        const newLeft = mirroredCenter - 5;
+        h.style.left = newLeft + "px";
+      });
+      updateStringPath(parent);
+    }
+
+    function addShape(type, skipHistory) {
+      const el = document.createElement("div");
+      el.classList.add("shape");
+
+      if (type === "button-round" || type === "button-four" || type === "button-eye" || type === "button") {
+        el.classList.add("shape-button");
+        if (type === "button-four") {
+          el.classList.add("shape-button-four");
+        } else {
+          el.classList.add("shape-button-round", "shape-button-eye");
+        }
+        const defaultColor = "#111827";
+        el.dataset.buttonColor = defaultColor;
+        el.style.setProperty("--btn-base", defaultColor);
+      } else {
+        el.classList.add("yarn", "shape-" + type, "yarn-pink");
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const defaultX = rect.width / 2 - 50 + (Math.random() * 20 - 10);
+      const defaultY = rect.height / 2 - 50 + (Math.random() * 20 - 10);
+      el.style.left = defaultX + "px";
+      el.style.top = defaultY + "px";
+      el.dataset.rotation = "0";
+      el.dataset.flipX = "1";
+      el.style.zIndex = ++zCounter;
+      updateTransform(el);
+
+      canvas.appendChild(el);
+      initShapeUI(el);
+      setSelected(el);
+
+      if (!skipHistory) pushHistory();
+      return el;
+    }
+
+    function addPillar(skipHistory) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-pillar");
+
+      const width = 80;
+      const height = 200;
+
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", "pillar-svg");
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("class", "pillar-path");
+      const defaultColor = "#f8a3b6";
+      path.style.stroke = defaultColor;
+      el.dataset.yarnCustomColor = defaultColor;
+      el.dataset.yarnColor = "yarn-pink";
+      svg.appendChild(path);
+      el.appendChild(svg);
+
+      const defaultPoints = [
+        { x: width / 2, y: 15  },
+        { x: width / 2 + 10, y: 60  },
+        { x: width / 2 - 8, y: 110 },
+        { x: width / 2 + 6, y: 155 },
+        { x: width / 2, y: 190 },
+      ];
+
+      defaultPoints.forEach((pt, idx) => {
+        const h = document.createElement("div");
+        h.classList.add("pillar-handle");
+        h.dataset.idx = idx;
+        h.style.left = pt.x - 5 + "px";
+        h.style.top = pt.y - 5 + "px";
+        el.appendChild(h);
+      });
+
+      const rect = canvas.getBoundingClientRect();
+      el.style.left = rect.width / 2 - width / 2 + "px";
+      el.style.top = rect.height / 2 - height / 2 + "px";
+      el.dataset.rotation = "0";
+      el.dataset.flipX = "1";
+      el.style.zIndex = ++zCounter;
+      updateTransform(el);
+
+      canvas.appendChild(el);
+      initShapeUI(el);
+      updatePillarPath(el);
+      setSelected(el);
+
+      if (!skipHistory) pushHistory();
+      return el;
+    }
+
+    function addResizeHandle(shape) {
+      const handle = document.createElement("div");
+      handle.classList.add("resize-handle");
+      shape.appendChild(handle);
+
+      handle.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setSelected(shape);
+        startResize(e, shape);
+      });
+    }
+
+    function initShapeUI(el) {
+      attachShapeEvents(el);
+
+      // Explicitly make these resizable:
+      if (
+        el.classList.contains("shape-circle")   ||
+        el.classList.contains("shape-oval-v")   ||
+        el.classList.contains("shape-oval-h")   ||
+        el.classList.contains("shape-square")   ||
+        el.classList.contains("shape-triangle") ||
+        el.classList.contains("shape-skirt")    ||
+        el.classList.contains("shape-button")   ||
+        el.classList.contains("shape-button-eye") ||
+        el.classList.contains("shape-emoji")
+      ) {
+        const old = el.querySelector(".resize-handle");
+        if (old) old.remove();
+        addResizeHandle(el);
+      }
+
+      if (el.classList.contains("shape-string")) {
+        initStringHandles(el);
+      }
+
+      if (el.classList.contains("shape-patch")) {
+        initPatchHandles(el);
+      }
+
+      if (el.classList.contains("shape-pillar")) {
+        initPillarHandles(el);
+      }
+    }
+
+    function attachShapeEvents(el) {
+      el.addEventListener("mousedown", (e) => {
+        if (
+          e.target.classList.contains("string-handle") ||
+          e.target.classList.contains("resize-handle") ||
+          e.target.classList.contains("patch-handle")  ||
+          e.target.classList.contains("pillar-handle")
+        ) return;
+        if (drawMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setSelected(el);
+        startDrag(e, el);
+      });
+    }
+
+    canvas.addEventListener("mousedown", (e) => {
+      if (e.target === canvas && !drawMode) clearSelected();
+    });
+
+    function startDrag(e, el) {
+      dragTarget = el;
+      const canvasRect = canvas.getBoundingClientRect();
+      const shapeRect = el.getBoundingClientRect();
+      dragOffsetX = e.clientX - shapeRect.left;
+      dragOffsetY = e.clientY - shapeRect.top;
+      let moved = false;
+
+      function onMove(ev) {
+        if (!dragTarget) return;
+        const x = ev.clientX - canvasRect.left - dragOffsetX;
+        const y = ev.clientY - canvasRect.top - dragOffsetY;
+
+        const maxX = canvasRect.width - dragTarget.offsetWidth;
+        const maxY = canvasRect.height - dragTarget.offsetHeight;
+        const clampedX = Math.max(0, Math.min(maxX, x));
+        const clampedY = Math.max(0, Math.min(maxY, y));
+
+        dragTarget.style.left = clampedX + "px";
+        dragTarget.style.top = clampedY + "px";
+        moved = true;
+      }
+
+      function onUp() {
+        if (moved) pushHistory();
+        dragTarget = null;
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      }
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    }
+
+    function startResize(e, shape) {
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startWidth = shape.offsetWidth;
+      const startHeight = shape.offsetHeight;
+      let moved = false;
+
+      function onMove(ev) {
+        const dx = ev.clientX - startMouseX;
+        const dy = ev.clientY - startMouseY;
+
+        const newW = Math.max(16, startWidth + dx);
+        const newH = Math.max(16, startHeight + dy);
+
+        shape.style.width = newW + "px";
+        shape.style.height = newH + "px";
+
+        if (shape.classList.contains("shape-emoji")) {
+          const size = Math.min(newW, newH);
+          shape.style.fontSize = (size * 0.7) + "px";
+        }
+
+        moved = true;
+      }
+
+      function onUp() {
+        if (moved) pushHistory();
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      }
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    }
+
+    /* ---------- STRINGS ---------- */
+
+    function addString(skipHistory) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-string");
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", "string-svg");
+      svg.setAttribute("viewBox", "0 0 160 80");
+
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("class", "string-path");
+      const defaultColor = "#111827";
+      path.style.stroke = defaultColor;
+      el.dataset.stringColor = defaultColor;
+      path.setAttribute("d", "M 20 50 Q 80 20 140 50");
+      svg.appendChild(path);
+      el.appendChild(svg);
+
+      const handlePoints = [
+        { x: 20, y: 50 },
+        { x: 80, y: 20 },
+        { x: 140, y: 50 },
+      ];
+
+      handlePoints.forEach((pt, idx) => {
+        const h = document.createElement("div");
+        h.classList.add("string-handle");
+        h.dataset.idx = idx;
+        h.style.left = pt.x - 5 + "px";
+        h.style.top = pt.y - 5 + "px";
+        el.appendChild(h);
+      });
+
+      const rect = canvas.getBoundingClientRect();
+      el.style.left = rect.width / 2 - 80 + "px";
+      el.style.top = rect.height / 2 + 80 + "px";
+      el.dataset.rotation = "0";
+      el.dataset.flipX = "1";
+      el.style.zIndex = ++zCounter;
+      updateTransform(el);
+
+      canvas.appendChild(el);
+      initShapeUI(el);
+      setSelected(el);
+      updateStringPath(el);
+
+      if (!skipHistory) pushHistory();
+      return el;
+    }
+
+    function initStringHandles(parent) {
+      const handles = parent.querySelectorAll(".string-handle");
+      handles.forEach((handle) => {
+        handle.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          setSelected(parent);
+          startStringHandleDrag(e, parent, handle);
+        });
+      });
+      updateStringPath(parent);
+    }
+
+    function startStringHandleDrag(e, parent, handle) {
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startLeft = parseFloat(handle.style.left || "0");
+      const startTop = parseFloat(handle.style.top || "0");
+      const parentWidth = parent.offsetWidth;
+      const parentHeight = parent.offsetHeight;
+      let moved = false;
+
+      function onMove(ev) {
+        const dx = ev.clientX - startMouseX;
+        const dy = ev.clientY - startMouseY;
+
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+
+        newLeft = Math.max(-5, Math.min(parentWidth - 5, newLeft));
+        newTop = Math.max(-5, Math.min(parentHeight - 5, newTop));
+
+        handle.style.left = newLeft + "px";
+        handle.style.top = newTop + "px";
+        moved = true;
+
+        updateStringPath(parent);
+      }
+
+      function onUp() {
+        if (moved) pushHistory();
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      }
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    }
+
+    function updateStringPath(parent) {
+      const path = parent.querySelector(".string-path");
+      if (!path) return;
+
+      const handles = Array.from(
+        parent.querySelectorAll(".string-handle")
+      ).sort((a, b) => {
+        return (
+          parseInt(a.dataset.idx || "0", 10) -
+          parseInt(b.dataset.idx || "0", 10)
+        );
+      });
+
+      if (handles.length < 3) return;
+
+      const points = handles.map((h) => {
+        const x = parseFloat(h.style.left || "0") + 5;
+        const y = parseFloat(h.style.top || "0") + 5;
+        return { x, y };
+      });
+
+      const d = `M ${points[0].x} ${points[0].y} Q ${points[1].x} ${points[1].y} ${points[2].x} ${points[2].y}`;
+      path.setAttribute("d", d);
+    }
+
+    /* ---------- COMPLEX PATCH ---------- */
+
+    function addPatch(skipHistory) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-patch");
+
+      const width = 220;
+      const height = 170;
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", "patch-svg");
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("class", "patch-path");
+      const defaultColor = "#f8a3b6";
+      path.style.fill = defaultColor;
+      el.dataset.yarnCustomColor = defaultColor;
+      svg.appendChild(path);
+      el.appendChild(svg);
+
+      const defaultPoints = [
+        { x: 60,  y: 30  },
+        { x: 140, y: 25  },
+        { x: 190, y: 75  },
+        { x: 175, y: 135 },
+        { x: 115, y: 150 },
+        { x: 55,  y: 135 },
+        { x: 30,  y: 80  },
+      ];
+
+      defaultPoints.forEach((pt, idx) => {
+        const h = document.createElement("div");
+        h.classList.add("patch-handle");
+        h.dataset.idx = idx;
+        h.style.left = pt.x - 5 + "px";
+        h.style.top = pt.y - 5 + "px";
+        el.appendChild(h);
+      });
+
+      const rect = canvas.getBoundingClientRect();
+      el.style.left = rect.width / 2 - width / 2 + "px";
+      el.style.top = rect.height / 2 - height / 2 + "px";
+      el.dataset.rotation = "0";
+      el.dataset.flipX = "1";
+      el.style.zIndex = ++zCounter;
+      updateTransform(el);
+
+      canvas.appendChild(el);
+initShapeUI(el);     // this will call initPatchHandles inside
+updatePatchPath(el);
+setSelected(el);
+
+      if (!skipHistory) pushHistory();
+      return el;
+    }
+
+    function initPatchHandles(parent) {
+      const handles = parent.querySelectorAll(".patch-handle");
+      handles.forEach((handle) => {
+        handle.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          setSelected(parent);
+          startPatchHandleDrag(e, parent, handle);
+        });
+      });
+      updatePatchPath(parent);
+    }
+
+    function startPatchHandleDrag(e, parent, handle) {
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startLeft = parseFloat(handle.style.left || "0");
+      const startTop = parseFloat(handle.style.top || "0");
+      const parentWidth = parent.offsetWidth;
+      const parentHeight = parent.offsetHeight;
+      let moved = false;
+
+      function onMove(ev) {
+        const dx = ev.clientX - startMouseX;
+        const dy = ev.clientY - startMouseY;
+
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+
+        newLeft = Math.max(-5, Math.min(parentWidth - 5, newLeft));
+        newTop = Math.max(-5, Math.min(parentHeight - 5, newTop));
+
+        handle.style.left = newLeft + "px";
+        handle.style.top = newTop + "px";
+        moved = true;
+
+        updatePatchPath(parent);
+      }
+
+      function onUp() {
+        if (moved) pushHistory();
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      }
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    }
+
+    function updatePatchPath(parent) {
+      const path = parent.querySelector(".patch-path");
+      if (!path) return;
+
+      const handles = Array.from(
+        parent.querySelectorAll(".patch-handle")
+      ).sort((a, b) => {
+        return (
+          parseInt(a.dataset.idx || "0", 10) -
+          parseInt(b.dataset.idx || "0", 10)
+        );
+      });
+
+      if (handles.length < 3) return;
+
+      const points = handles.map((h) => {
+        const x = parseFloat(h.style.left || "0") + 5;
+        const y = parseFloat(h.style.top || "0") + 5;
+        return { x, y };
+      });
+
+      let d = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        d += ` L ${points[i].x} ${points[i].y}`;
+      }
+      d += " Z";
+      path.setAttribute("d", d);
+    }
+
+    /* ---------- PILLAR SHAPE (hair / tail / tentacle) ---------- */
+
+    function initPillarHandles(parent) {
+      const handles = parent.querySelectorAll(".pillar-handle");
+      handles.forEach((handle) => {
+        handle.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          setSelected(parent);
+          startPillarHandleDrag(e, parent, handle);
+        });
+      });
+      updatePillarPath(parent);
+    }
+
+    function startPillarHandleDrag(e, parent, handle) {
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startLeft = parseFloat(handle.style.left || "0");
+      const startTop = parseFloat(handle.style.top || "0");
+      const parentWidth = parent.offsetWidth;
+      const parentHeight = parent.offsetHeight;
+      let moved = false;
+
+      function onMove(ev) {
+        const dx = ev.clientX - startMouseX;
+        const dy = ev.clientY - startMouseY;
+
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+
+        newLeft = Math.max(-5, Math.min(parentWidth - 5, newLeft));
+        newTop = Math.max(-5, Math.min(parentHeight - 5, newTop));
+
+        handle.style.left = newLeft + "px";
+        handle.style.top = newTop + "px";
+        moved = true;
+
+        updatePillarPath(parent);
+      }
+
+      function onUp() {
+        if (moved) pushHistory();
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      }
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    }
+
+    function updatePillarPath(parent) {
+      const path = parent.querySelector(".pillar-path");
+      if (!path) return;
+
+      const handles = Array.from(
+        parent.querySelectorAll(".pillar-handle")
+      ).sort((a, b) => {
+        return (
+          parseInt(a.dataset.idx || "0", 10) -
+          parseInt(b.dataset.idx || "0", 10)
+        );
+      });
+
+      if (handles.length < 2) return;
+
+      const points = handles.map((h) => {
+        const x = parseFloat(h.style.left || "0") + 5;
+        const y = parseFloat(h.style.top || "0") + 5;
+        return { x, y };
+      });
+
+      let d = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        d += ` L ${points[i].x} ${points[i].y}`;
+      }
+      path.setAttribute("d", d);
+    }
+
+    /* ---------- Color / transform / multi-ops ---------- */
+
+    function setColor(colorClass) {
+      if (!selectedShapes.size) return;
+
+      selectedShapes.forEach(shape => {
+        if (shape.classList.contains("shape-patch")) {
+          const path = shape.querySelector(".patch-path");
+          if (!path) return;
+          const hex = yarnColorHex[colorClass] || "#f8a3b6";
+          path.style.fill = hex;
+          shape.dataset.yarnColor = colorClass;
+          shape.dataset.yarnCustomColor = hex;
+          return;
+        }
+
+        if (shape.classList.contains("shape-pillar")) {
+          const path = shape.querySelector(".pillar-path");
+          if (!path) return;
+          const hex = yarnColorHex[colorClass] || "#f8a3b6";
+          path.style.stroke = hex;
+          shape.dataset.yarnColor = colorClass;
+          shape.dataset.yarnCustomColor = hex;
+          return;
+        }
+
+        if (!shape.classList.contains("yarn")) return;
+        yarnClasses.forEach((c) => shape.classList.remove(c));
+        shape.dataset.yarnCustomColor = "";
+        shape.style.backgroundColor = "";
+        shape.classList.add(colorClass);
+      });
+
+      pushHistory();
+    }
+
+    function setCustomYarnColor(color) {
+      if (!selectedShapes.size) return;
+
+      selectedShapes.forEach(shape => {
+        if (shape.classList.contains("shape-patch")) {
+          const path = shape.querySelector(".patch-path");
+          if (!path) return;
+          path.style.fill = color;
+          shape.dataset.yarnCustomColor = color;
+          shape.dataset.yarnColor = "";
+          return;
+        }
+        if (shape.classList.contains("shape-pillar")) {
+          const path = shape.querySelector(".pillar-path");
+          if (!path) return;
+          path.style.stroke = color;
+          shape.dataset.yarnCustomColor = color;
+          shape.dataset.yarnColor = "";
+          return;
+        }
+        if (!shape.classList.contains("yarn")) return;
+        yarnClasses.forEach((c) => shape.classList.remove(c));
+        shape.style.backgroundColor = color;
+        shape.dataset.yarnCustomColor = color;
+      });
+
+      pushHistory();
+    }
+
+    function setButtonColor(preset) {
+      if (!selectedShapes.size) return;
+      const col = buttonPresetHex[preset];
+      if (!col) return;
+      selectedShapes.forEach(shape => {
+        if (shape.classList.contains("shape-button") || shape.classList.contains("shape-button-eye")) {
+          shape.dataset.buttonColor = col;
+          shape.style.setProperty("--btn-base", col);
+        }
+      });
+      pushHistory();
+    }
+
+    function setCustomButtonColor(color) {
+      if (!selectedShapes.size) return;
+      selectedShapes.forEach(shape => {
+        if (shape.classList.contains("shape-button") || shape.classList.contains("shape-button-eye")) {
+          shape.dataset.buttonColor = color;
+          shape.style.setProperty("--btn-base", color);
+        }
+      });
+      pushHistory();
+    }
+
+    function setStringColor(color) {
+      if (!selectedShapes.size) return;
+      selectedShapes.forEach(shape => {
+        if (!shape.classList.contains("shape-string")) return;
+        const path = shape.querySelector(".string-path");
+        if (path) {
+          path.style.stroke = color;
+          shape.dataset.stringColor = color;
+        }
+      });
+      pushHistory();
+    }
+
+    function rotateSelected(deltaDeg) {
+      if (!selectedShapes.size) return;
+      selectedShapes.forEach(shape => {
+        let current = parseFloat(shape.dataset.rotation || "0");
+        current += deltaDeg;
+        shape.dataset.rotation = current.toString();
+        updateTransform(shape);
+      });
+      pushHistory();
+    }
+
+    function deleteSelected() {
+      if (!selectedShapes.size) return;
+      selectedShapes.forEach(shape => shape.remove());
+      clearSelected();
+      pushHistory();
+    }
+
+    function duplicateSelected() {
+      if (!selectedShapes.size) return;
+      const originals = Array.from(selectedShapes);
+      const newSelection = [];
+      originals.forEach(original => {
+        const clone = original.cloneNode(true);
+        clone.classList.remove("selected");
+
+        const left = parseFloat(original.style.left || "0");
+        const top = parseFloat(original.style.top || "0");
+        clone.style.left = left + 20 + "px";
+        clone.style.top = top + 20 + "px";
+
+        const rot = original.dataset.rotation || "0";
+        const flipX = original.dataset.flipX || "1";
+        clone.dataset.rotation = rot;
+        clone.dataset.flipX = flipX;
+        clone.style.zIndex = ++zCounter;
+        updateTransform(clone);
+
+        canvas.appendChild(clone);
+        initShapeUI(clone);
+        newSelection.push(clone);
+      });
+
+      clearSelected();
+      newSelection.forEach(c => addToSelection(c));
+      pushHistory();
+    }
+
+    /* ---------- Layer order helpers ---------- */
+
+    function getShapesSortedByZ() {
+      return Array.from(canvas.querySelectorAll(".shape")).sort((a, b) => {
+        const za = parseInt(a.style.zIndex || "0", 10) || 0;
+        const zb = parseInt(b.style.zIndex || "0", 10) || 0;
+        return za - zb;
+      });
+    }
+
+    function applyZOrder(shapes) {
+      shapes.forEach((el, idx) => {
+        el.style.zIndex = (idx + 1).toString();
+      });
+      zCounter = shapes.length;
+    }
+
+    function sendToBackSelected() {
+      if (!selectedShapes.size) return;
+      const shapes = getShapesSortedByZ();
+      const selected = shapes.filter(s => selectedShapes.has(s));
+      const others = shapes.filter(s => !selectedShapes.has(s));
+      const newOrder = [...selected, ...others];
+      applyZOrder(newOrder);
+      pushHistory();
+    }
+
+    function bringToFrontSelected() {
+      if (!selectedShapes.size) return;
+      const shapes = getShapesSortedByZ();
+      const selected = shapes.filter(s => selectedShapes.has(s));
+      const others = shapes.filter(s => !selectedShapes.has(s));
+      const newOrder = [...others, ...selected];
+      applyZOrder(newOrder);
+      pushHistory();
+    }
+
+    function moveForwardSelected() {
+      if (!selectedShapes.size) return;
+      const shapes = getShapesSortedByZ();
+      for (let i = shapes.length - 2; i >= 0; i--) {
+        const s = shapes[i];
+        const next = shapes[i + 1];
+        if (selectedShapes.has(s) && !selectedShapes.has(next)) {
+          shapes[i] = next;
+          shapes[i + 1] = s;
+        }
+      }
+      applyZOrder(shapes);
+      pushHistory();
+    }
+
+    function moveBackwardSelected() {
+      if (!selectedShapes.size) return;
+      const shapes = getShapesSortedByZ();
+      for (let i = 1; i < shapes.length; i++) {
+        const s = shapes[i];
+        const prev = shapes[i - 1];
+        if (selectedShapes.has(s) && !selectedShapes.has(prev)) {
+          shapes[i] = prev;
+          shapes[i - 1] = s;
+        }
+      }
+      applyZOrder(shapes);
+      pushHistory();
+    }
+
+    /* ---------- SAVE / LOAD JSON ---------- */
+
+    function saveJSON() {
+      const data = serializeCanvas();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "crochet-doll.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function triggerLoadJSON() {
+      loadInput.value = "";
+      loadInput.click();
+    }
+
+    loadInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          loadFromData(data);
+          undoStack = [];
+          redoStack = [];
+          pushHistory();
+        } catch (err) {
+          alert("Invalid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    function loadFromData(data) {
+      const existing = Array.from(canvas.querySelectorAll(".shape"));
+      existing.forEach((el) => el.remove());
+      zCounter = 1;
+      clearSelected();
+
+      if (drawCtx && drawCanvas) {
+        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        if (data && data.drawingData) {
+          const img = new Image();
+          img.onload = () => {
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            drawCtx.drawImage(img, 0, 0, drawCanvas.width, drawCanvas.height);
+          };
+          img.src = data.drawingData;
+        }
+      }
+
+      if (!data || !Array.isArray(data.shapes)) return;
+
+      data.shapes.forEach((item) => {
+        if (item.type === "string") {
+          createStringFromData(item);
+          return;
+        }
+        if (item.type === "patch") {
+          createPatchFromData(item);
+          return;
+        }
+        if (item.type === "pillar") {
+          createPillarFromData(item);
+          return;
+        }
+        if (item.type === "button-round" || item.type === "button-four" || item.type === "button-eye" || item.type === "button") {
+          createButtonFromData(item);
+          return;
+        }
+        if (item.type === "emoji") {
+          createEmojiFromData(item);
+          return;
+        }
+
+        const el = document.createElement("div");
+        el.classList.add("shape");
+
+        if (["circle","oval-v","oval-h","square","triangle","skirt"].includes(item.type)) {
+          el.classList.add("yarn");
+          if (item.type === "circle")   el.classList.add("shape-circle");
+          else if (item.type === "oval-v")  el.classList.add("shape-oval-v");
+          else if (item.type === "oval-h")  el.classList.add("shape-oval-h");
+          else if (item.type === "square")  el.classList.add("shape-square");
+          else if (item.type === "triangle")el.classList.add("shape-triangle");
+          else if (item.type === "skirt")   el.classList.add("shape-skirt");
+
+          if (item.yarnCustomColor) {
+            yarnClasses.forEach((c) => el.classList.remove(c));
+            el.style.backgroundColor = item.yarnCustomColor;
+            el.dataset.yarnCustomColor = item.yarnCustomColor;
+          } else if (item.yarnColor && yarnClasses.includes(item.yarnColor)) {
+            el.classList.add(item.yarnColor);
+          } else {
+            el.classList.add("yarn-pink");
+          }
+        }
+
+        el.style.width = (item.width || 80) + "px";
+        el.style.height = (item.height || 80) + "px";
+        el.style.left = (item.left || 0) + "px";
+        el.style.top = (item.top || 0) + "px";
+        el.dataset.rotation = (item.rotation || 0).toString();
+        el.dataset.flipX =
+          typeof item.flipX === "number" ? item.flipX.toString() : "1";
+        el.style.zIndex = item.zIndex || ++zCounter;
+        canvas.appendChild(el);
+        initShapeUI(el);
+        updateTransform(el);
+        if (item.zIndex && item.zIndex > zCounter) zCounter = item.zIndex;
+      });
+    }
+
+    function createStringFromData(item) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-string");
+
+      const width = item.width || 160;
+      const height = item.height || 80;
+
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+      el.style.left = (item.left || 0) + "px";
+      el.style.top = (item.top || 0) + "px";
+      el.dataset.rotation = (item.rotation || 0).toString();
+      el.dataset.flipX =
+        typeof item.flipX === "number" ? item.flipX.toString() : "1";
+      el.style.zIndex = item.zIndex || ++zCounter;
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", "string-svg");
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("class", "string-path");
+      const strokeColor = item.stringColor || "#111827";
+      path.style.stroke = strokeColor;
+      el.dataset.stringColor = strokeColor;
+      svg.appendChild(path);
+      el.appendChild(svg);
+
+      const defaultPoints =
+        item.points && item.points.length === 3
+          ? item.points
+          : [
+              { x: 20, y: height - 30 },
+              { x: width / 2, y: 20 },
+              { x: width - 20, y: height - 30 },
+            ];
+
+      defaultPoints.forEach((pt, idx) => {
+        const h = document.createElement("div");
+        h.classList.add("string-handle");
+        h.dataset.idx = idx;
+        h.style.left = pt.x - 5 + "px";
+        h.style.top = pt.y - 5 + "px";
+        el.appendChild(h);
+      });
+
+      canvas.appendChild(el);
+      initShapeUI(el);
+      updateStringPath(el);
+      updateTransform(el);
+      if (item.zIndex && item.zIndex > zCounter) zCounter = item.zIndex;
+      return el;
+    }
+
+    function createPatchFromData(item) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-patch");
+
+      const width = item.width || 220;
+      const height = item.height || 170;
+
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+      el.style.left = (item.left || 0) + "px";
+      el.style.top = (item.top || 0) + "px";
+      el.dataset.rotation = (item.rotation || 0).toString();
+      el.dataset.flipX =
+        typeof item.flipX === "number" ? item.flipX.toString() : "1";
+      el.style.zIndex = item.zIndex || ++zCounter;
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", "patch-svg");
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("class", "patch-path");
+
+      let fillColor = "#f8a3b6";
+      if (item.yarnCustomColor) {
+        fillColor = item.yarnCustomColor;
+      } else if (item.yarnColor && yarnColorHex[item.yarnColor]) {
+        fillColor = yarnColorHex[item.yarnColor];
+      }
+      path.style.fill = fillColor;
+      el.dataset.yarnCustomColor = fillColor;
+      el.dataset.yarnColor = item.yarnColor || "";
+      svg.appendChild(path);
+      el.appendChild(svg);
+
+      const defaultPoints =
+        item.patchPoints && item.patchPoints.length >= 3
+          ? item.patchPoints
+          : [
+              { x: 60,  y: 30  },
+              { x: 140, y: 25  },
+              { x: 190, y: 75  },
+              { x: 175, y: 135 },
+              { x: 115, y: 150 },
+              { x: 55,  y: 135 },
+              { x: 30,  y: 80  },
+            ];
+
+      defaultPoints.forEach((pt, idx) => {
+        const h = document.createElement("div");
+        h.classList.add("patch-handle");
+        h.dataset.idx = idx;
+        h.style.left = pt.x - 5 + "px";
+        h.style.top = pt.y - 5 + "px";
+        el.appendChild(h);
+      });
+canvas.appendChild(el);
+initShapeUI(el);     // again, this hooks drag + patch handles
+updatePatchPath(el);
+updateTransform(el);
+if (item.zIndex && item.zIndex > zCounter) zCounter = item.zIndex;
+return el;
+         }
+
+    function createPillarFromData(item) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-pillar");
+
+      const width = item.width || 80;
+      const height = item.height || 200;
+
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+      el.style.left = (item.left || 0) + "px";
+      el.style.top = (item.top || 0) + "px";
+      el.dataset.rotation = (item.rotation || 0).toString();
+      el.dataset.flipX =
+        typeof item.flipX === "number" ? item.flipX.toString() : "1";
+      el.style.zIndex = item.zIndex || ++zCounter;
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", "pillar-svg");
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("class", "pillar-path");
+
+      let strokeColor = "#f8a3b6";
+      if (item.yarnCustomColor) {
+        strokeColor = item.yarnCustomColor;
+      } else if (item.yarnColor && yarnColorHex[item.yarnColor]) {
+        strokeColor = yarnColorHex[item.yarnColor];
+      }
+      path.style.stroke = strokeColor;
+      el.dataset.yarnCustomColor = strokeColor;
+      el.dataset.yarnColor = item.yarnColor || "yarn-pink";
+
+      svg.appendChild(path);
+      el.appendChild(svg);
+
+      const defaultPoints =
+        item.pillarPoints && item.pillarPoints.length >= 2
+          ? item.pillarPoints
+          : [
+              { x: width / 2, y: 15  },
+              { x: width / 2 + 10, y: 60  },
+              { x: width / 2 - 8, y: 110 },
+              { x: width / 2 + 6, y: 155 },
+              { x: width / 2, y: 190 },
+            ];
+
+      defaultPoints.forEach((pt, idx) => {
+        const h = document.createElement("div");
+        h.classList.add("pillar-handle");
+        h.dataset.idx = idx;
+        h.style.left = pt.x - 5 + "px";
+        h.style.top = pt.y - 5 + "px";
+        el.appendChild(h);
+      });
+
+      canvas.appendChild(el);
+      initPillarHandles(el);
+      updatePillarPath(el);
+      updateTransform(el);
+      if (item.zIndex && item.zIndex > zCounter) zCounter = item.zIndex;
+      return el;
+    }
+
+    function createButtonFromData(item) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-button");
+
+      if (item.type === "button-four") {
+        el.classList.add("shape-button-four");
+      } else {
+        el.classList.add("shape-button-round", "shape-button-eye");
+      }
+
+      const width = item.width || 28;
+      const height = item.height || 28;
+
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+      el.style.left = (item.left || 0) + "px";
+      el.style.top = (item.top || 0) + "px";
+      el.dataset.rotation = (item.rotation || 0).toString();
+      el.dataset.flipX =
+        typeof item.flipX === "number" ? item.flipX.toString() : "1";
+      el.style.zIndex = item.zIndex || ++zCounter;
+
+      const baseColor = item.buttonColor || "#111827";
+      el.dataset.buttonColor = baseColor;
+      el.style.setProperty("--btn-base", baseColor);
+
+      canvas.appendChild(el);
+      initShapeUI(el);
+      updateTransform(el);
+      if (item.zIndex && item.zIndex > zCounter) zCounter = item.zIndex;
+      return el;
+    }
+
+    function createEmojiFromData(item) {
+      const el = document.createElement("div");
+      el.classList.add("shape", "shape-emoji");
+
+      const char = item.emojiChar || "⭐";
+      el.textContent = char;
+      el.dataset.emoji = char;
+
+      const width = item.width || 60;
+      const height = item.height || 60;
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+
+      const size = item.emojiSize || Math.min(width, height) * 0.7;
+      el.style.fontSize = size + "px";
+
+      el.style.left = (item.left || 0) + "px";
+      el.style.top = (item.top || 0) + "px";
+      el.dataset.rotation = (item.rotation || 0).toString();
+      el.dataset.flipX =
+        typeof item.flipX === "number" ? item.flipX.toString() : "1";
+      el.style.zIndex = item.zIndex || ++zCounter;
+
+      canvas.appendChild(el);
+      initShapeUI(el);
+      updateTransform(el);
+      if (item.zIndex && item.zIndex > zCounter) zCounter = item.zIndex;
+      return el;
+    }
+
+    /* ---------- EXPORT PNG ---------- */
+
+    function exportPNG() {
+      if (typeof html2canvas === "undefined") {
+        alert("html2canvas library not loaded.");
+        return;
+      }
+
+      canvas.classList.add("exporting");
+
+      html2canvas(canvas, {
+        backgroundColor: null,
+        scale: 2
+      }).then((cnv) => {
+        const link = document.createElement("a");
+        link.href = cnv.toDataURL("image/png");
+        link.download = "crochet-doll.png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }).catch((err) => {
+        console.error(err);
+        alert("Something went wrong while exporting.");
+      }).finally(() => {
+        canvas.classList.remove("exporting");
+      });
+    }
+
+    /* ---------- INITIAL TEMPLATE ---------- */
+
+    function initTemplate() {
+      addShape("oval-v", true);
+      const body = selectedShape;
+      body.style.top = "260px";
+      body.style.left = "310px";
+      setColor("yarn-brown");
+
+      addShape("circle", true);
+      const head = selectedShape;
+      head.style.top = "180px";
+      head.style.left = "300px";
+      setColor("yarn-cream");
+
+      addShape("oval-h", true);
+      const ear1 = selectedShape;
+      ear1.style.top = "170px";
+      ear1.style.left = "270px";
+      setColor("yarn-brown");
+
+      addShape("oval-h", true);
+      const ear2 = selectedShape;
+      ear2.style.top = "170px";
+      ear2.style.left = "350px";
+      setColor("yarn-brown");
+
+      addShape("button-round", true);
+      const eye1 = selectedShape;
+      eye1.style.top = "205px";
+      eye1.style.left = "317px";
+
+      addShape("button-round", true);
+      const eye2 = selectedShape;
+      eye2.style.top = "205px";
+      eye2.style.left = "350px";
+
+      addString(true);
+      const mouth = selectedShape;
+      mouth.style.top = "230px";
+      mouth.style.left = "300px";
+      clearSelected();
+
+      pushHistory();
+    }
+
+    setupDrawingLayer();
+    initTemplate();
+  </script>
+</body>
+</html>
